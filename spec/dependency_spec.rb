@@ -164,50 +164,6 @@ RSpec.describe Dependency do
     end
   end
 
-  describe '.from_hash' do
-    context '有効なハッシュの場合' do
-      it 'Dependencyオブジェクトを作成する' do
-        hash = { name: 'rack', version: '>= 2.0.0' }
-        dependency = Dependency.from_hash(hash)
-        
-        expect(dependency.name).to eq('rack')
-        expect(dependency.version_constraint).to eq('>= 2.0.0')
-      end
-
-      it 'versionがnilでも作成できる' do
-        hash = { name: 'rack', version: nil }
-        dependency = Dependency.from_hash(hash)
-        
-        expect(dependency.name).to eq('rack')
-        expect(dependency.version_constraint).to be_nil
-      end
-
-      it 'versionキーがなくても作成できる' do
-        hash = { name: 'rack' }
-        dependency = Dependency.from_hash(hash)
-        
-        expect(dependency.name).to eq('rack')
-        expect(dependency.version_constraint).to be_nil
-      end
-    end
-  end
-
-  describe '#to_hash' do
-    it 'ハッシュ形式に変換できる' do
-      dependency = Dependency.new('rack', '>= 2.0.0')
-      hash = dependency.to_hash
-      
-      expect(hash).to eq({ name: 'rack', version: '>= 2.0.0' })
-    end
-
-    it 'version_constraintがnilでもハッシュ化できる' do
-      dependency = Dependency.new('rack')
-      hash = dependency.to_hash
-      
-      expect(hash).to eq({ name: 'rack', version: nil })
-    end
-  end
-
   describe 'エッジケース' do
     context '空文字列' do
       it '空文字列でも依存関係を作成できる' do

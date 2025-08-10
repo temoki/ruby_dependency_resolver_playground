@@ -26,14 +26,4 @@ class Dependency
   def eql?(other)
     self == other
   end
-
-  # ハッシュ形式から変換するためのクラスメソッド
-  def self.from_hash(hash)
-    new(hash[:name], hash[:version])
-  end
-
-  # ハッシュ形式に変換
-  def to_hash
-    { name: name, version: version_constraint }
-  end
 end
