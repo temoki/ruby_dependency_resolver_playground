@@ -1,6 +1,5 @@
 require_relative '../lib/package'
-require_relative '../lib/dependency'
-require_relative '../lib/version_constraint'
+require_relative '../lib/package'
 
 RSpec.configure do |config|
   config.expect_with :rspec do |expectations|

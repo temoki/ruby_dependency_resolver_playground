@@ -1,56 +1,6 @@
 require 'molinillo'
+require 'rubygems'
 require_relative 'package'
-require_relative 'dependency'
-require_relative 'version_constraint'
-
-# 要件を表現するクラス
-class Requirement
-  attr_reader :name, :version_constraint
-
-  def initialize(name, version_constraint = nil)
-    @name = name
-    @version_constraint = version_constraint
-  end
-
-  def satisfied_by?(package)
-    return true if version_constraint.nil?
-    
-    case version_constraint
-    when VersionConstraint
-      version_constraint.satisfied_by?(package.version)
-    when String
-      # 後方互換性のため文字列もサポート
-      satisfy_string_constraint(package.version, version_constraint)
-    else
-      false
-    end
-  rescue
-    # バージョン比較でエラーが発生した場合は文字列比較
-    package.version == version_constraint.to_s
-  end
-
-  private
-
-  def satisfy_string_constraint(package_version, constraint)
-    case constraint
-    when /^>= (.+)$/
-      Gem::Version.new(package_version) >= Gem::Version.new($1)
-    when /^~> (.+)$/
-      base_version = Gem::Version.new($1)
-      pkg_version = Gem::Version.new(package_version)
-      pkg_version >= base_version && pkg_version.release < base_version.bump
-    when /^= (.+)$/, /^(.+)$/
-      target = $1 || constraint
-      package_version == target
-    else
-      package_version == constraint
-    end
-  end
-
-  def to_s
-    version_constraint ? "#{name} (#{version_constraint})" : name
-  end
-end
 
 # Molinillo用のSpecificationProvider実装
 class SimpleSpecificationProvider
@@ -70,11 +20,9 @@ class SimpleSpecificationProvider
     case dependency
     when String
       dependency
-    when Requirement
+    when Gem::Dependency
       dependency.name
     when Package
-      dependency.name
-    when Dependency
       dependency.name
     else
       dependency.to_s
@@ -91,39 +39,34 @@ class SimpleSpecificationProvider
 
   def dependencies_for(package)
     return [] unless package.is_a?(Package)
-    # dependenciesは既にDependencyオブジェクトの配列なので、
-    # Requirementオブジェクトに変換する
-    deps = package.dependencies.map do |dep|
-      constraint = case dep.version_constraint
-                   when VersionConstraint
-                     dep.version_constraint
-                   else
-                     dep.version_constraint
-                   end
-      Requirement.new(dep.name, constraint)
-    end
-    deps
+    # dependenciesは既にGem::Dependencyオブジェクトの配列
+    package.dependencies
   end
 
-  def requirement_satisfied_by?(requirement, activated, package)
-    requirement.satisfied_by?(package)
+  def requirement_satisfied_by?(requirement, activated, spec)
+    case requirement
+    when Gem::Dependency
+      requirement.requirement.satisfied_by?(spec.version)
+    else
+      true
+    end
   end
 
   def sort_dependencies(dependencies, activated, conflicts)
-    dependencies.sort_by(&:name)
-  end
-
-  def allow_missing?(dependency)
-    false
+    dependencies.sort_by { |dep| name_for(dep) }
   end
 end
 
-# シンプルなUI実装
+# Molinillo用のUI実装
 class SimpleUI
   include Molinillo::UI
 
   def output
     @output ||= []
+  end
+
+  def allow_missing?(dependency)
+    false
   end
 
   def debug?
@@ -155,25 +98,25 @@ def create_sample_packages
     Package.new('rack', '3.0.0', []),
     
     Package.new('sinatra', '2.0.0', [
-      Dependency.new('rack', VersionConstraint.gte('2.0.0'))
+      Gem::Dependency.new('rack', '>= 2.0.0')
     ]),
     Package.new('sinatra', '2.1.0', [
-      Dependency.new('rack', VersionConstraint.gte('2.1.0'))
+      Gem::Dependency.new('rack', '>= 2.1.0')
     ]),
     
     Package.new('rails', '6.0.0', [
-      Dependency.new('rack', VersionConstraint.pessimistic('2.0'))
+      Gem::Dependency.new('rack', '~> 2.0')
     ]),
     Package.new('rails', '7.0.0', [
-      Dependency.new('rack', VersionConstraint.pessimistic('2.1'))
+      Gem::Dependency.new('rack', '~> 2.1')
     ]),
     
     # 競合を作るための追加パッケージ
     Package.new('legacy_app', '1.0.0', [
-      Dependency.new('rack', VersionConstraint.equal('2.0.0'))  # 厳密にrack 2.0.0のみ
+      Gem::Dependency.new('rack', '= 2.0.0')  # 厳密にrack 2.0.0のみ
     ]),
     Package.new('modern_app', '1.0.0', [
-      Dependency.new('rack', VersionConstraint.equal('3.0.0'))  # 厳密にrack 3.0.0のみ
+      Gem::Dependency.new('rack', '= 3.0.0')  # 厳密にrack 3.0.0のみ
     ])
   ]
 end
@@ -199,8 +142,9 @@ def main
   puts "ケース1: 正常な依存関係解決"
   puts "="*50
   
+  # sinatraの最新版を要求（内部でrackが必要）
   requirements = [
-    Requirement.new('sinatra', '2.0.0'),
+    Gem::Dependency.new('sinatra', '= 2.0.0'),
   ]
   
   run_resolution(resolver, requirements)
@@ -212,8 +156,8 @@ def main
   
   # 互換性のない要件を設定
   conflicting_requirements = [
-    Requirement.new('legacy_app', '1.0.0'),  # rack = 2.0.0が必要
-    Requirement.new('modern_app', '1.0.0'),  # rack = 3.0.0が必要
+    Gem::Dependency.new('legacy_app', '= 1.0.0'),  # rack = 2.0.0が必要
+    Gem::Dependency.new('modern_app', '= 1.0.0'),  # rack = 3.0.0が必要
   ]
   
   run_resolution(resolver, conflicting_requirements)
@@ -224,8 +168,8 @@ def main
   puts "="*50
   
   multiple_requirements = [
-    Requirement.new('sinatra', '>= 2.0.0'),
-    Requirement.new('rails', '6.0.0'),
+    Gem::Dependency.new('sinatra', '>= 2.0.0'),
+    Gem::Dependency.new('rails', '= 6.0.0'),
   ]
   
   run_resolution(resolver, multiple_requirements)
