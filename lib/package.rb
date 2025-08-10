@@ -10,9 +10,9 @@ class Package
     
     # Dependencies validation
     unless dependencies.nil?
-      dependencies.each do |dep|
-        unless dep.is_a?(Dependency)
-          raise ArgumentError, "Invalid dependency type: #{dep.class}. Only Dependency objects are allowed."
+      dependencies.each do |dependency|
+        unless dependency.is_a?(Dependency)
+          raise ArgumentError, "Invalid dependency type: #{dependency.class}. Only Dependency objects are allowed."
         end
       end
     end
