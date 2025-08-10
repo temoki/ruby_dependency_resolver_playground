@@ -4,15 +4,24 @@ require 'rubygems'
 class Package
   attr_reader :name, :version, :dependencies
 
-  def initialize(name, version, dependencies = [])
-    # バリデーションを先に実行
-    validated_version = self.class.validate_version(version)
-    validated_dependencies = self.class.validate_dependencies(dependencies)
-    
-    # 全てのバリデーションが成功した後にインスタンス変数を設定
+  def initialize(name, version, dependencies)
+    unless name.is_a?(String)
+      raise TypeError, "`name` must be a String"
+    end
     @name = name
-    @version = validated_version
-    @dependencies = validated_dependencies
+
+    unless version.is_a?(Gem::Version)
+      raise TypeError, "`version` must be a Gem::Version"
+    end
+    @version = version
+
+    unless dependencies.is_a?(Array)
+      raise TypeError, "`dependencies` must be an Array"
+    end
+    unless dependencies.all? { |dep| dep.is_a?(Gem::Dependency) }
+      raise TypeError, "All elements in `dependencies` must be Gem::Dependency"
+    end
+    @dependencies = dependencies
   end
 
   def to_s
@@ -29,30 +38,5 @@ class Package
 
   def eql?(other)
     self == other
-  end
-
-  private
-
-  def self.validate_version(version)
-    unless version.is_a?(Gem::Version)
-      raise ArgumentError, "Version must be a Gem::Version, got #{version.class}"
-    end
-    version
-  end
-
-  def self.validate_dependencies(deps)
-    return [].freeze if deps.nil?
-    
-    unless deps.is_a?(Array)
-      raise ArgumentError, "Dependencies must be an Array, got #{deps.class}"
-    end
-    
-    deps.each_with_index do |dep, index|
-      unless dep.is_a?(Gem::Dependency)
-        raise ArgumentError, "Dependencies[#{index}] must be a Gem::Dependency, got #{dep.class}"
-      end
-    end
-    
-    deps.dup.freeze  # 配列を不変にして型安全性を向上
   end
 end
