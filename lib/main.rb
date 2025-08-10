@@ -1,5 +1,6 @@
 require 'molinillo'
 require_relative 'package'
+require_relative 'dependency'
 
 # 要件を表現するクラス
 class Requirement
@@ -59,6 +60,8 @@ class SimpleSpecificationProvider
       dependency.name
     when Package
       dependency.name
+    when Dependency
+      dependency.name
     else
       dependency.to_s
     end
@@ -74,7 +77,9 @@ class SimpleSpecificationProvider
 
   def dependencies_for(package)
     return [] unless package.is_a?(Package)
-    deps = package.dependencies.map { |dep| Requirement.new(dep[:name], dep[:version]) }
+    # dependenciesは既にDependencyオブジェクトの配列なので、
+    # Requirementオブジェクトに変換する
+    deps = package.dependencies.map { |dep| Requirement.new(dep.name, dep.version_constraint) }
     deps
   end
 

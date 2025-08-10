@@ -4,7 +4,10 @@ RSpec.describe Package do
   describe '#initialize' do
     context '全パラメータを指定した場合' do
       it 'name, version, dependenciesが正しく設定される' do
-        dependencies = ['dep1', 'dep2']
+        dependencies = [
+          Dependency.new('dep1', '>= 1.0.0'),
+          Dependency.new('dep2', '~> 2.0')
+        ]
         package = Package.new('test-package', '1.0.0', dependencies)
         
         expect(package.name).to eq('test-package')
@@ -23,29 +26,101 @@ RSpec.describe Package do
       end
     end
 
+    context 'dependenciesにハッシュが含まれる場合' do
+      it 'ハッシュからDependencyオブジェクトに変換される' do
+        dependencies = [
+          { name: 'dep1', version: '>= 1.0.0' },
+          { name: 'dep2', version: '~> 2.0' }
+        ]
+        package = Package.new('test-package', '1.0.0', dependencies)
+        
+        expect(package.dependencies).to all(be_a(Dependency))
+        expect(package.dependencies[0].name).to eq('dep1')
+        expect(package.dependencies[0].version_constraint).to eq('>= 1.0.0')
+        expect(package.dependencies[1].name).to eq('dep2')
+        expect(package.dependencies[1].version_constraint).to eq('~> 2.0')
+      end
+    end
+
+    context 'dependenciesに文字列が含まれる場合' do
+      it '文字列からDependencyオブジェクトに変換される' do
+        dependencies = ['dep1', 'dep2']
+        package = Package.new('test-package', '1.0.0', dependencies)
+        
+        expect(package.dependencies).to all(be_a(Dependency))
+        expect(package.dependencies[0].name).to eq('dep1')
+        expect(package.dependencies[0].version_constraint).to be_nil
+        expect(package.dependencies[1].name).to eq('dep2')
+        expect(package.dependencies[1].version_constraint).to be_nil
+      end
+    end
+
+    context '混在したdependenciesの場合' do
+      it '異なる形式の依存関係を正しく変換する' do
+        dependencies = [
+          Dependency.new('dep1', '>= 1.0.0'),
+          { name: 'dep2', version: '~> 2.0' },
+          'dep3'
+        ]
+        package = Package.new('test-package', '1.0.0', dependencies)
+        
+        expect(package.dependencies).to all(be_a(Dependency))
+        expect(package.dependencies[0].name).to eq('dep1')
+        expect(package.dependencies[0].version_constraint).to eq('>= 1.0.0')
+        expect(package.dependencies[1].name).to eq('dep2')
+        expect(package.dependencies[1].version_constraint).to eq('~> 2.0')
+        expect(package.dependencies[2].name).to eq('dep3')
+        expect(package.dependencies[2].version_constraint).to be_nil
+      end
+    end
+
     context 'パラメータにnilが含まれる場合' do
       it 'nilも正常に処理される' do
         package = Package.new(nil, nil, nil)
         
         expect(package.name).to be_nil
         expect(package.version).to be_nil
-        expect(package.dependencies).to be_nil
+        expect(package.dependencies).to eq([])
+      end
+    end
+
+    context '不正なdependencies形式の場合' do
+      it '不正な型に対してArgumentErrorを発生させる' do
+        expect {
+          Package.new('test-package', '1.0.0', [123])
+        }.to raise_error(ArgumentError, /Invalid dependency type/)
+      end
+
+      it ':nameキーがないハッシュに対してArgumentErrorを発生させる' do
+        expect {
+          Package.new('test-package', '1.0.0', [{ version: '1.0.0' }])
+        }.to raise_error(ArgumentError, /Dependency hash must contain :name key/)
+      end
+
+      it ':nameが文字列でない場合にArgumentErrorを発生させる' do
+        expect {
+          Package.new('test-package', '1.0.0', [{ name: 123, version: '1.0.0' }])
+        }.to raise_error(ArgumentError, /Dependency name must be a String/)
       end
     end
 
     context '特殊文字を含む場合' do
       it '特殊文字も正常に処理される' do
-        package = Package.new('test-package!@#', '1.0.0-beta+123', ['dep-1', 'dep_2'])
+        dependencies = [
+          { name: 'dep-1', version: '>= 1.0.0-beta' }
+        ]
+        package = Package.new('test-package!@#', '1.0.0-beta+123', dependencies)
         
         expect(package.name).to eq('test-package!@#')
         expect(package.version).to eq('1.0.0-beta+123')
-        expect(package.dependencies).to eq(['dep-1', 'dep_2'])
+        expect(package.dependencies[0].name).to eq('dep-1')
+        expect(package.dependencies[0].version_constraint).to eq('>= 1.0.0-beta')
       end
     end
   end
 
   describe '#name, #version, #dependencies' do
-    let(:dependencies) { ['dep1', 'dep2'] }
+    let(:dependencies) { [Dependency.new('dep1', '>= 1.0.0'), Dependency.new('dep2', '~> 2.0')] }
     let(:package) { Package.new('test-package', '1.0.0', dependencies) }
 
     it 'nameを読み取れる' do
@@ -213,17 +288,17 @@ RSpec.describe Package do
   end
 
   describe '不変性' do
-    let(:dependencies) { ['dep1', 'dep2'] }
+    let(:dependencies) { [Dependency.new('dep1', '>= 1.0.0'), Dependency.new('dep2', '~> 2.0')] }
     let(:package) { Package.new('test-package', '1.0.0', dependencies) }
 
     it 'dependenciesは凍結されており変更できない' do
       expect(package.dependencies).to be_frozen
-      expect { package.dependencies << 'new-dep' }.to raise_error(FrozenError)
+      expect { package.dependencies << Dependency.new('new-dep') }.to raise_error(FrozenError)
     end
 
     it 'dependenciesを直接変更してもパッケージに影響しない' do
       original_package_deps = package.dependencies.dup
-      dependencies << 'new-dep'
+      dependencies << Dependency.new('new-dep')
       
       expect(package.dependencies).to eq(original_package_deps)
     end
@@ -242,22 +317,25 @@ RSpec.describe Package do
 
     context '大きなdependencies配列' do
       it '大量の依存関係でも正常に処理される' do
-        large_deps = (1..1000).map { |i| "dep#{i}" }
+        large_deps = (1..1000).map { |i| Dependency.new("dep#{i}", ">= #{i}.0.0") }
         package = Package.new('test-package', '1.0.0', large_deps)
         
         expect(package.dependencies.size).to eq(1000)
-        expect(package.dependencies.first).to eq('dep1')
-        expect(package.dependencies.last).to eq('dep1000')
+        expect(package.dependencies.first.name).to eq('dep1')
+        expect(package.dependencies.last.name).to eq('dep1000')
+        expect(package.dependencies).to all(be_a(Dependency))
       end
     end
 
     context 'Unicode文字' do
       it 'Unicode文字を含むname/versionでも正常に処理される' do
-        package = Package.new('テスト-パッケージ', '１.０.０', ['依存1', '依存2'])
+        dependencies = [Dependency.new('依存1', '>= １.０.０')]
+        package = Package.new('テスト-パッケージ', '１.０.０', dependencies)
         
         expect(package.name).to eq('テスト-パッケージ')
         expect(package.version).to eq('１.０.０')
         expect(package.to_s).to eq('テスト-パッケージ-１.０.０')
+        expect(package.dependencies[0].name).to eq('依存1')
       end
     end
   end
