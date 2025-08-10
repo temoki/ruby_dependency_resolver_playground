@@ -5,7 +5,7 @@ class Package
   def initialize(name, version, dependencies = [])
     @name = name
     @version = version
-    @dependencies = dependencies
+    @dependencies = dependencies.dup.freeze  # 配列をコピーして凍結
   end
 
   def to_s
@@ -18,5 +18,9 @@ class Package
 
   def hash
     [name, version].hash
+  end
+
+  def eql?(other)
+    self == other
   end
 end
