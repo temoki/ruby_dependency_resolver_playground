@@ -5,9 +5,14 @@ class Package
   attr_reader :name, :version, :dependencies
 
   def initialize(name, version, dependencies = [])
+    # バリデーションを先に実行
+    validated_version = self.class.validate_version(version)
+    validated_dependencies = self.class.validate_dependencies(dependencies)
+    
+    # 全てのバリデーションが成功した後にインスタンス変数を設定
     @name = name
-    @version = validate_version(version)
-    @dependencies = validate_dependencies(dependencies)
+    @version = validated_version
+    @dependencies = validated_dependencies
   end
 
   def to_s
@@ -28,14 +33,14 @@ class Package
 
   private
 
-  def validate_version(version)
+  def self.validate_version(version)
     unless version.is_a?(Gem::Version)
       raise ArgumentError, "Version must be a Gem::Version, got #{version.class}"
     end
     version
   end
 
-  def validate_dependencies(deps)
+  def self.validate_dependencies(deps)
     return [].freeze if deps.nil?
     
     unless deps.is_a?(Array)
