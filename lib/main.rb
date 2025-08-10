@@ -133,25 +133,25 @@ def create_sample_packages
     Package.new('rack', '3.0.0', []),
     
     Package.new('sinatra', '2.0.0', [
-      { name: 'rack', version: '>= 2.0.0' }
+      Dependency.new('rack', '>= 2.0.0')
     ]),
     Package.new('sinatra', '2.1.0', [
-      { name: 'rack', version: '>= 2.1.0' }
+      Dependency.new('rack', '>= 2.1.0')
     ]),
     
     Package.new('rails', '6.0.0', [
-      { name: 'rack', version: '~> 2.0' }
+      Dependency.new('rack', '~> 2.0')
     ]),
     Package.new('rails', '7.0.0', [
-      { name: 'rack', version: '~> 2.1' }
+      Dependency.new('rack', '~> 2.1')
     ]),
     
     # 競合を作るための追加パッケージ
     Package.new('legacy_app', '1.0.0', [
-      { name: 'rack', version: '= 2.0.0' }  # 厳密にrack 2.0.0のみ
+      Dependency.new('rack', '= 2.0.0')  # 厳密にrack 2.0.0のみ
     ]),
     Package.new('modern_app', '1.0.0', [
-      { name: 'rack', version: '= 3.0.0' }  # 厳密にrack 3.0.0のみ
+      Dependency.new('rack', '= 3.0.0')  # 厳密にrack 3.0.0のみ
     ])
   ]
 end

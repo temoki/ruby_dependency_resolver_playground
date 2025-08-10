@@ -27,50 +27,37 @@ RSpec.describe Package do
     end
 
     context 'dependenciesにハッシュが含まれる場合' do
-      it 'ハッシュからDependencyオブジェクトに変換される' do
+      it 'ArgumentErrorを発生させる' do
         dependencies = [
-          { name: 'dep1', version: '>= 1.0.0' },
-          { name: 'dep2', version: '~> 2.0' }
+          { name: 'dep1', version: '>= 1.0.0' }
         ]
-        package = Package.new('test-package', '1.0.0', dependencies)
         
-        expect(package.dependencies).to all(be_a(Dependency))
-        expect(package.dependencies[0].name).to eq('dep1')
-        expect(package.dependencies[0].version_constraint).to eq('>= 1.0.0')
-        expect(package.dependencies[1].name).to eq('dep2')
-        expect(package.dependencies[1].version_constraint).to eq('~> 2.0')
+        expect {
+          Package.new('test-package', '1.0.0', dependencies)
+        }.to raise_error(ArgumentError, /Only Dependency objects are allowed/)
       end
     end
 
     context 'dependenciesに文字列が含まれる場合' do
-      it '文字列からDependencyオブジェクトに変換される' do
-        dependencies = ['dep1', 'dep2']
-        package = Package.new('test-package', '1.0.0', dependencies)
+      it 'ArgumentErrorを発生させる' do
+        dependencies = ['dep1']
         
-        expect(package.dependencies).to all(be_a(Dependency))
-        expect(package.dependencies[0].name).to eq('dep1')
-        expect(package.dependencies[0].version_constraint).to be_nil
-        expect(package.dependencies[1].name).to eq('dep2')
-        expect(package.dependencies[1].version_constraint).to be_nil
+        expect {
+          Package.new('test-package', '1.0.0', dependencies)
+        }.to raise_error(ArgumentError, /Only Dependency objects are allowed/)
       end
     end
 
     context '混在したdependenciesの場合' do
-      it '異なる形式の依存関係を正しく変換する' do
+      it 'Dependencyオブジェクト以外でArgumentErrorを発生させる' do
         dependencies = [
           Dependency.new('dep1', '>= 1.0.0'),
-          { name: 'dep2', version: '~> 2.0' },
-          'dep3'
+          { name: 'dep2', version: '~> 2.0' }  # これがエラーになる
         ]
-        package = Package.new('test-package', '1.0.0', dependencies)
         
-        expect(package.dependencies).to all(be_a(Dependency))
-        expect(package.dependencies[0].name).to eq('dep1')
-        expect(package.dependencies[0].version_constraint).to eq('>= 1.0.0')
-        expect(package.dependencies[1].name).to eq('dep2')
-        expect(package.dependencies[1].version_constraint).to eq('~> 2.0')
-        expect(package.dependencies[2].name).to eq('dep3')
-        expect(package.dependencies[2].version_constraint).to be_nil
+        expect {
+          Package.new('test-package', '1.0.0', dependencies)
+        }.to raise_error(ArgumentError, /Only Dependency objects are allowed/)
       end
     end
 
@@ -85,29 +72,29 @@ RSpec.describe Package do
     end
 
     context '不正なdependencies形式の場合' do
-      it '不正な型に対してArgumentErrorを発生させる' do
+      it 'Dependency以外の型に対してArgumentErrorを発生させる' do
         expect {
           Package.new('test-package', '1.0.0', [123])
-        }.to raise_error(ArgumentError, /Invalid dependency type/)
+        }.to raise_error(ArgumentError, /Only Dependency objects are allowed/)
       end
 
-      it ':nameキーがないハッシュに対してArgumentErrorを発生させる' do
+      it 'Hash形式に対してArgumentErrorを発生させる' do
         expect {
-          Package.new('test-package', '1.0.0', [{ version: '1.0.0' }])
-        }.to raise_error(ArgumentError, /Dependency hash must contain :name key/)
+          Package.new('test-package', '1.0.0', [{ name: 'dep1', version: '1.0.0' }])
+        }.to raise_error(ArgumentError, /Only Dependency objects are allowed/)
       end
 
-      it ':nameが文字列でない場合にArgumentErrorを発生させる' do
+      it 'String形式に対してArgumentErrorを発生させる' do
         expect {
-          Package.new('test-package', '1.0.0', [{ name: 123, version: '1.0.0' }])
-        }.to raise_error(ArgumentError, /Dependency name must be a String/)
+          Package.new('test-package', '1.0.0', ['dep1'])
+        }.to raise_error(ArgumentError, /Only Dependency objects are allowed/)
       end
     end
 
     context '特殊文字を含む場合' do
       it '特殊文字も正常に処理される' do
         dependencies = [
-          { name: 'dep-1', version: '>= 1.0.0-beta' }
+          Dependency.new('dep-1', '>= 1.0.0-beta')
         ]
         package = Package.new('test-package!@#', '1.0.0-beta+123', dependencies)
         
@@ -180,10 +167,10 @@ RSpec.describe Package do
   end
 
   describe '#==' do
-    let(:package1) { Package.new('test-package', '1.0.0', ['dep1']) }
-    let(:package2) { Package.new('test-package', '1.0.0', ['dep2']) }
-    let(:package3) { Package.new('other-package', '1.0.0', ['dep1']) }
-    let(:package4) { Package.new('test-package', '2.0.0', ['dep1']) }
+    let(:package1) { Package.new('test-package', '1.0.0', [Dependency.new('dep1', '>= 1.0.0')]) }
+    let(:package2) { Package.new('test-package', '1.0.0', [Dependency.new('dep2', '~> 2.0')]) }
+    let(:package3) { Package.new('other-package', '1.0.0', [Dependency.new('dep1', '>= 1.0.0')]) }
+    let(:package4) { Package.new('test-package', '2.0.0', [Dependency.new('dep1', '>= 1.0.0')]) }
 
     context '同じname, versionを持つ場合' do
       it 'dependenciesが異なっても等価とみなされる' do
@@ -234,9 +221,9 @@ RSpec.describe Package do
   end
 
   describe '#hash' do
-    let(:package1) { Package.new('test-package', '1.0.0', ['dep1']) }
-    let(:package2) { Package.new('test-package', '1.0.0', ['dep2']) }
-    let(:package3) { Package.new('other-package', '1.0.0', ['dep1']) }
+    let(:package1) { Package.new('test-package', '1.0.0', [Dependency.new('dep1', '>= 1.0.0')]) }
+    let(:package2) { Package.new('test-package', '1.0.0', [Dependency.new('dep2', '~> 2.0')]) }
+    let(:package3) { Package.new('other-package', '1.0.0', [Dependency.new('dep1', '>= 1.0.0')]) }
 
     context '同じname, versionを持つ場合' do
       it '同じハッシュ値を返す' do
@@ -272,9 +259,9 @@ RSpec.describe Package do
   end
 
   describe '#eql?' do
-    let(:package1) { Package.new('test-package', '1.0.0', ['dep1']) }
-    let(:package2) { Package.new('test-package', '1.0.0', ['dep2']) }
-    let(:package3) { Package.new('other-package', '1.0.0', ['dep1']) }
+    let(:package1) { Package.new('test-package', '1.0.0', [Dependency.new('dep1', '>= 1.0.0')]) }
+    let(:package2) { Package.new('test-package', '1.0.0', [Dependency.new('dep2', '~> 2.0')]) }
+    let(:package3) { Package.new('other-package', '1.0.0', [Dependency.new('dep1', '>= 1.0.0')]) }
 
     it '==と同じ動作をする' do
       expect(package1.eql?(package2)).to eq(package1 == package2)
