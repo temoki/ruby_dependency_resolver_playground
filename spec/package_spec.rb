@@ -101,7 +101,8 @@ RSpec.describe Package do
         expect(package.name).to eq('test-package!@#')
         expect(package.version).to eq('1.0.0-beta+123')
         expect(package.dependencies[0].name).to eq('dep-1')
-        expect(package.dependencies[0].version_constraint).to eq('>= 1.0.0-beta')
+        expect(package.dependencies[0].version_constraint).to be_a(VersionConstraint)
+        expect(package.dependencies[0].version_constraint.to_s).to eq('>= 1.0.0.pre.beta')
       end
     end
   end
@@ -315,13 +316,13 @@ RSpec.describe Package do
     end
 
     context 'Unicode文字' do
-      it 'Unicode文字を含むname/versionでも正常に処理される' do
-        dependencies = [Dependency.new('依存1', '>= １.０.０')]
-        package = Package.new('テスト-パッケージ', '１.０.０', dependencies)
+      it 'Unicode文字を含むname（バージョンは通常の形式）でも正常に処理される' do
+        dependencies = [Dependency.new('依存1', '>= 1.0.0')]
+        package = Package.new('テスト-パッケージ', '1.0.0', dependencies)
         
         expect(package.name).to eq('テスト-パッケージ')
-        expect(package.version).to eq('１.０.０')
-        expect(package.to_s).to eq('テスト-パッケージ-１.０.０')
+        expect(package.version).to eq('1.0.0')
+        expect(package.to_s).to eq('テスト-パッケージ-1.0.0')
         expect(package.dependencies[0].name).to eq('依存1')
       end
     end

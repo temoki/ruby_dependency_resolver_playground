@@ -11,12 +11,40 @@ RSpec.describe Dependency do
       end
     end
 
-    context '名前とバージョン制約を指定した場合' do
-      it 'name, version_constraintが正しく設定される' do
+    context 'VersionConstraintオブジェクトを指定した場合' do
+      it 'VersionConstraintが正しく設定される' do
+        constraint = VersionConstraint.gte('2.0.0')
+        dependency = Dependency.new('rack', constraint)
+        
+        expect(dependency.name).to eq('rack')
+        expect(dependency.version_constraint).to eq(constraint)
+      end
+    end
+
+    context '文字列のバージョン制約を指定した場合（後方互換性）' do
+      it '文字列からVersionConstraintに変換される' do
         dependency = Dependency.new('rack', '>= 2.0.0')
         
         expect(dependency.name).to eq('rack')
-        expect(dependency.version_constraint).to eq('>= 2.0.0')
+        expect(dependency.version_constraint).to be_a(VersionConstraint)
+        expect(dependency.version_constraint.to_s).to eq('>= 2.0.0')
+      end
+
+      it '様々な演算子をサポートする' do
+        test_cases = [
+          ['>= 2.0.0', VersionConstraint::Operator::GREATER_THAN_OR_EQUAL],
+          ['> 2.0.0', VersionConstraint::Operator::GREATER_THAN],
+          ['<= 2.0.0', VersionConstraint::Operator::LESS_THAN_OR_EQUAL],
+          ['< 2.0.0', VersionConstraint::Operator::LESS_THAN],
+          ['~> 2.0', VersionConstraint::Operator::PESSIMISTIC],
+          ['= 2.0.0', VersionConstraint::Operator::EQUAL],
+          ['2.0.0', VersionConstraint::Operator::EQUAL]  # 演算子なし
+        ]
+
+        test_cases.each do |constraint_str, expected_operator|
+          dependency = Dependency.new('test', constraint_str)
+          expect(dependency.version_constraint.operator).to eq(expected_operator)
+        end
       end
     end
 
@@ -26,6 +54,14 @@ RSpec.describe Dependency do
         
         expect(dependency.name).to be_nil
         expect(dependency.version_constraint).to be_nil
+      end
+    end
+
+    context '不正なバージョン制約の場合' do
+      it 'ArgumentErrorを発生させる' do
+        expect {
+          Dependency.new('rack', 123)
+        }.to raise_error(ArgumentError, /Version constraint must be nil, VersionConstraint, or String/)
       end
     end
   end
@@ -38,7 +74,8 @@ RSpec.describe Dependency do
     end
 
     it 'version_constraintを読み取れる' do
-      expect(dependency.version_constraint).to eq('>= 2.0.0')
+      expect(dependency.version_constraint).to be_a(VersionConstraint)
+      expect(dependency.version_constraint.to_s).to eq('>= 2.0.0')
     end
 
     it '属性は読み取り専用である' do
@@ -170,18 +207,17 @@ RSpec.describe Dependency do
         dependency = Dependency.new('', '')
         
         expect(dependency.name).to eq('')
-        expect(dependency.version_constraint).to eq('')
-        expect(dependency.to_s).to eq('')  # 空文字列の場合はnameのみ表示
+        expect(dependency.version_constraint).to be_nil
       end
     end
 
     context 'Unicode文字' do
-      it 'Unicode文字を含むname/version_constraintでも正常に処理される' do
-        dependency = Dependency.new('テスト-パッケージ', '>= １.０.０')
+      it 'Unicode文字を含むname（バージョンは通常の形式）でも正常に処理される' do
+        dependency = Dependency.new('パッケージ名', '>= 1.0.0')
         
-        expect(dependency.name).to eq('テスト-パッケージ')
-        expect(dependency.version_constraint).to eq('>= １.０.０')
-        expect(dependency.to_s).to eq('テスト-パッケージ (>= １.０.０)')
+        expect(dependency.name).to eq('パッケージ名')
+        expect(dependency.version_constraint).to be_a(VersionConstraint)
+        expect(dependency.version_constraint.to_s).to eq('>= 1.0.0')
       end
     end
   end

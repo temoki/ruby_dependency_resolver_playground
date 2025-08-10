@@ -1,6 +1,7 @@
 require 'molinillo'
 require_relative 'package'
 require_relative 'dependency'
+require_relative 'version_constraint'
 
 # 要件を表現するクラス
 class Requirement
@@ -14,23 +15,36 @@ class Requirement
   def satisfied_by?(package)
     return true if version_constraint.nil?
     
-    # シンプルなバージョン比較（実際の実装ではより複雑）
     case version_constraint
-    when /^>= (.+)$/
-      Gem::Version.new(package.version) >= Gem::Version.new($1)
-    when /^~> (.+)$/
-      base_version = Gem::Version.new($1)
-      pkg_version = Gem::Version.new(package.version)
-      pkg_version >= base_version && pkg_version.release < base_version.bump
-    when /^= (.+)$/, /^(.+)$/
-      target = $1 || version_constraint
-      package.version == target
+    when VersionConstraint
+      version_constraint.satisfied_by?(package.version)
+    when String
+      # 後方互換性のため文字列もサポート
+      satisfy_string_constraint(package.version, version_constraint)
     else
-      package.version == version_constraint
+      false
     end
   rescue
-    # Gem::Versionが使えない場合の簡単な文字列比較
-    package.version == version_constraint
+    # バージョン比較でエラーが発生した場合は文字列比較
+    package.version == version_constraint.to_s
+  end
+
+  private
+
+  def satisfy_string_constraint(package_version, constraint)
+    case constraint
+    when /^>= (.+)$/
+      Gem::Version.new(package_version) >= Gem::Version.new($1)
+    when /^~> (.+)$/
+      base_version = Gem::Version.new($1)
+      pkg_version = Gem::Version.new(package_version)
+      pkg_version >= base_version && pkg_version.release < base_version.bump
+    when /^= (.+)$/, /^(.+)$/
+      target = $1 || constraint
+      package_version == target
+    else
+      package_version == constraint
+    end
   end
 
   def to_s
@@ -79,7 +93,15 @@ class SimpleSpecificationProvider
     return [] unless package.is_a?(Package)
     # dependenciesは既にDependencyオブジェクトの配列なので、
     # Requirementオブジェクトに変換する
-    deps = package.dependencies.map { |dep| Requirement.new(dep.name, dep.version_constraint) }
+    deps = package.dependencies.map do |dep|
+      constraint = case dep.version_constraint
+                   when VersionConstraint
+                     dep.version_constraint
+                   else
+                     dep.version_constraint
+                   end
+      Requirement.new(dep.name, constraint)
+    end
     deps
   end
 
@@ -133,25 +155,25 @@ def create_sample_packages
     Package.new('rack', '3.0.0', []),
     
     Package.new('sinatra', '2.0.0', [
-      Dependency.new('rack', '>= 2.0.0')
+      Dependency.new('rack', VersionConstraint.gte('2.0.0'))
     ]),
     Package.new('sinatra', '2.1.0', [
-      Dependency.new('rack', '>= 2.1.0')
+      Dependency.new('rack', VersionConstraint.gte('2.1.0'))
     ]),
     
     Package.new('rails', '6.0.0', [
-      Dependency.new('rack', '~> 2.0')
+      Dependency.new('rack', VersionConstraint.pessimistic('2.0'))
     ]),
     Package.new('rails', '7.0.0', [
-      Dependency.new('rack', '~> 2.1')
+      Dependency.new('rack', VersionConstraint.pessimistic('2.1'))
     ]),
     
     # 競合を作るための追加パッケージ
     Package.new('legacy_app', '1.0.0', [
-      Dependency.new('rack', '= 2.0.0')  # 厳密にrack 2.0.0のみ
+      Dependency.new('rack', VersionConstraint.equal('2.0.0'))  # 厳密にrack 2.0.0のみ
     ]),
     Package.new('modern_app', '1.0.0', [
-      Dependency.new('rack', '= 3.0.0')  # 厳密にrack 3.0.0のみ
+      Dependency.new('rack', VersionConstraint.equal('3.0.0'))  # 厳密にrack 3.0.0のみ
     ])
   ]
 end
