@@ -6,8 +6,8 @@ class Package
 
   def initialize(name, version, dependencies = [])
     @name = name
-    @version = version.is_a?(Gem::Version) ? version : Gem::Version.new(version.to_s)
-    @dependencies = normalize_dependencies(dependencies)
+    @version = validate_version(version)
+    @dependencies = validate_dependencies(dependencies)
   end
 
   def to_s
@@ -28,31 +28,26 @@ class Package
 
   private
 
-  def normalize_dependencies(deps)
-    return [] if deps.nil?
-    
-    deps.map do |dep|
-      case dep
-      when Gem::Dependency
-        dep
-      when String
-        # "gem_name >= 1.0.0" 形式の文字列をパース
-        parse_dependency_string(dep)
-      else
-        raise ArgumentError, "Dependencies must be Gem::Dependency objects or strings, got #{dep.class}"
-      end
+  def validate_version(version)
+    unless version.is_a?(Gem::Version)
+      raise ArgumentError, "Version must be a Gem::Version, got #{version.class}"
     end
+    version
   end
 
-  def parse_dependency_string(dep_string)
-    # "gem_name >= 1.0.0" を "gem_name", ">= 1.0.0" に分割
-    if dep_string =~ /^(\S+)\s+(.+)$/
-      name = $1
-      requirement = $2
-      Gem::Dependency.new(name, requirement)
-    else
-      # バージョン指定がない場合
-      Gem::Dependency.new(dep_string, '>= 0')
+  def validate_dependencies(deps)
+    return [].freeze if deps.nil?
+    
+    unless deps.is_a?(Array)
+      raise ArgumentError, "Dependencies must be an Array, got #{deps.class}"
     end
+    
+    deps.each_with_index do |dep, index|
+      unless dep.is_a?(Gem::Dependency)
+        raise ArgumentError, "Dependencies[#{index}] must be a Gem::Dependency, got #{dep.class}"
+      end
+    end
+    
+    deps.dup.freeze  # 配列を不変にして型安全性を向上
   end
 end

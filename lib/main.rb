@@ -93,29 +93,29 @@ end
 # サンプルパッケージデータの作成
 def create_sample_packages
   [
-    Package.new('rack', '2.0.0', []),
-    Package.new('rack', '2.1.0', []),
-    Package.new('rack', '3.0.0', []),
+    Package.new('rack', Gem::Version.new('2.0.0'), []),
+    Package.new('rack', Gem::Version.new('2.1.0'), []),
+    Package.new('rack', Gem::Version.new('3.0.0'), []),
     
-    Package.new('sinatra', '2.0.0', [
+    Package.new('sinatra', Gem::Version.new('2.0.0'), [
       Gem::Dependency.new('rack', '>= 2.0.0')
     ]),
-    Package.new('sinatra', '2.1.0', [
+    Package.new('sinatra', Gem::Version.new('2.1.0'), [
       Gem::Dependency.new('rack', '>= 2.1.0')
     ]),
     
-    Package.new('rails', '6.0.0', [
+    Package.new('rails', Gem::Version.new('6.0.0'), [
       Gem::Dependency.new('rack', '~> 2.0')
     ]),
-    Package.new('rails', '7.0.0', [
+    Package.new('rails', Gem::Version.new('7.0.0'), [
       Gem::Dependency.new('rack', '~> 2.1')
     ]),
     
     # 競合を作るための追加パッケージ
-    Package.new('legacy_app', '1.0.0', [
+    Package.new('legacy_app', Gem::Version.new('1.0.0'), [
       Gem::Dependency.new('rack', '= 2.0.0')  # 厳密にrack 2.0.0のみ
     ]),
-    Package.new('modern_app', '1.0.0', [
+    Package.new('modern_app', Gem::Version.new('1.0.0'), [
       Gem::Dependency.new('rack', '= 3.0.0')  # 厳密にrack 3.0.0のみ
     ])
   ]
