@@ -40,7 +40,7 @@ begin
   if result.respond_to?(:vertices)
     result.vertices.each do |name, vertex|
       if vertex.payload
-        puts "  #{name}: #{vertex.payload}"
+        puts "  #{vertex.payload}"
       end
     end
   else
