@@ -84,9 +84,22 @@ class SpecificationProvider
   # @param conflicts [Hash] 競合情報
   # @return [Array<Dependency>] ソートされた依存関係の配列
   def sort_dependencies(dependencies, activated, conflicts)
-    # 1. 競合がある依存関係を優先
+    # 依存関係解決の効率化のための優先順位付け：
+    # 
+    # 1. 競合がある依存関係を最優先で処理
+    #    - 既に競合が発生している依存関係を早期に解決することで、
+    #      バックトラッキングの回数を減らし、解決速度を向上させる
+    #    - 例：AとBが同じライブラリの異なるバージョンを要求している場合
+    # 
     # 2. より制限的な要件を持つ依存関係を優先
-    # 3. アルファベット順
+    #    - 制限の強い順：= > <,> > >=,<= 
+    #    - 制限的な要件を先に満たすことで、後続の選択肢を効果的に絞り込める
+    #    - 例：'= 6.1.0' を '>= 6.0' より先に処理することで、
+    #      バージョン6.1.0が確定し、他の依存関係の解決が簡単になる
+    # 
+    # 3. パッケージ名のアルファベット順
+    #    - 同じ優先度の依存関係に対して決定的な順序を提供
+    #    - テスト結果の一貫性と予測可能性を保証
     dependencies.sort_by do |dependency|
       name = dependency.name
       has_conflict = conflicts.key?(name) ? 0 : 1
