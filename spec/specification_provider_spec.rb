@@ -193,27 +193,28 @@ RSpec.describe SpecificationProvider do
     it 'returns true when requirement is satisfied' do
       requirement = Dependency.new('rails', Requirement.new('>=', Version.new(6)))
       
-      expect(provider.requirement_satisfied_by?(requirement, rails_v7_spec)).to be true
-      expect(provider.requirement_satisfied_by?(requirement, rails_v6_spec)).to be true
+      expect(provider.requirement_satisfied_by?(requirement, nil, rails_v7_spec)).to be true
+      expect(provider.requirement_satisfied_by?(requirement, nil, rails_v6_spec)).to be true
     end
 
     it 'returns false when requirement is not satisfied' do
       requirement = Dependency.new('rails', Requirement.new('>', Version.new(7)))
       
-      expect(provider.requirement_satisfied_by?(requirement, rails_v7_spec)).to be false
-      expect(provider.requirement_satisfied_by?(requirement, rails_v6_spec)).to be false
+      expect(provider.requirement_satisfied_by?(requirement, nil, rails_v7_spec)).to be false
+      expect(provider.requirement_satisfied_by?(requirement, nil, rails_v6_spec)).to be false
     end
 
     it 'returns false when names do not match' do
       requirement = Dependency.new('activerecord', Requirement.new('>=', Version.new(6)))
-      
-      expect(provider.requirement_satisfied_by?(requirement, rails_v7_spec)).to be false
+
+      expect(provider.requirement_satisfied_by?(requirement, nil, rails_v7_spec)).to be false
     end
 
-    it 'returns false when activated_spec is nil' do
+    it 'returns false when spec has different name' do
       requirement = Dependency.new('rails', Requirement.new('>=', Version.new(6)))
-      
-      expect(provider.requirement_satisfied_by?(requirement, nil)).to be false
+      different_spec = Specification.new('activerecord', Version.new(7), [])
+
+      expect(provider.requirement_satisfied_by?(requirement, nil, different_spec)).to be false
     end
   end
 
