@@ -25,4 +25,14 @@ class Dependency
   def eql?(other)
     self == other
   end
+
+  # 指定されたSpecificationがこの依存関係を満たすかどうかを判断
+  # @param spec [Specification] 判定対象のSpecification
+  # @return [Boolean] 依存関係を満たす場合はtrue
+  def satisfied_by?(spec)
+    return false unless spec.is_a?(Specification)
+    return false unless name == spec.name
+    
+    requirement.satisfied_by?(spec.version)
+  end
 end

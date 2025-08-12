@@ -2,6 +2,7 @@ require 'spec_helper'
 require_relative '../lib/dependency'
 require_relative '../lib/requirement'
 require_relative '../lib/version'
+require_relative '../lib/specification'
 
 RSpec.describe Dependency do
   let(:version_1) { Version.new(1) }
@@ -264,6 +265,112 @@ RSpec.describe Dependency do
       expect(dep1.hash).to eq(dep2.hash)
       expect(dep1.eql?(dep2)).to be true
       expect(dep1.to_s).to eq(dep2.to_s)
+    end
+  end
+
+  describe '#satisfied_by?' do
+    let(:specification_gem_a_v1) { Specification.new('gem_a', version_1, []) }
+    let(:specification_gem_a_v2) { Specification.new('gem_a', version_2, []) }
+    let(:specification_gem_a_v3) { Specification.new('gem_a', version_3, []) }
+    let(:specification_gem_b_v2) { Specification.new('gem_b', version_2, []) }
+
+    context 'when names match' do
+      it 'returns true when requirement is satisfied' do
+        # gem_a >= 1 is satisfied by gem_a v2
+        dependency = Dependency.new('gem_a', requirement_gte_1)
+        expect(dependency.satisfied_by?(specification_gem_a_v2)).to be true
+        expect(dependency.satisfied_by?(specification_gem_a_v1)).to be true
+        expect(dependency.satisfied_by?(specification_gem_a_v3)).to be true
+      end
+
+      it 'returns false when requirement is not satisfied' do
+        # gem_a = 2 is not satisfied by gem_a v1 or v3
+        dependency = Dependency.new('gem_a', requirement_eq_2)
+        expect(dependency.satisfied_by?(specification_gem_a_v1)).to be false
+        expect(dependency.satisfied_by?(specification_gem_a_v3)).to be false
+        expect(dependency.satisfied_by?(specification_gem_a_v2)).to be true
+      end
+
+      it 'works with less than requirement' do
+        # gem_a < 3 is satisfied by gem_a v1 and v2 but not v3
+        dependency = Dependency.new('gem_a', requirement_lt_3)
+        expect(dependency.satisfied_by?(specification_gem_a_v1)).to be true
+        expect(dependency.satisfied_by?(specification_gem_a_v2)).to be true
+        expect(dependency.satisfied_by?(specification_gem_a_v3)).to be false
+      end
+    end
+
+    context 'when names do not match' do
+      it 'returns false even if version requirement would be satisfied' do
+        # gem_a >= 1 vs gem_b v2 - names don't match
+        dependency = Dependency.new('gem_a', requirement_gte_1)
+        expect(dependency.satisfied_by?(specification_gem_b_v2)).to be false
+      end
+
+      it 'returns false for exact version match with different names' do
+        # gem_a = 2 vs gem_b v2 - names don't match
+        dependency = Dependency.new('gem_a', requirement_eq_2)
+        expect(dependency.satisfied_by?(specification_gem_b_v2)).to be false
+      end
+    end
+
+    context 'with invalid arguments' do
+      it 'returns false for nil argument' do
+        dependency = Dependency.new('gem_a', requirement_gte_1)
+        expect(dependency.satisfied_by?(nil)).to be false
+      end
+
+      it 'returns false for non-Specification objects' do
+        dependency = Dependency.new('gem_a', requirement_gte_1)
+        expect(dependency.satisfied_by?('string')).to be false
+        expect(dependency.satisfied_by?(123)).to be false
+        expect(dependency.satisfied_by?(version_1)).to be false
+        expect(dependency.satisfied_by?(requirement_gte_1)).to be false
+      end
+    end
+
+    context 'with various operators' do
+      let(:requirement_gt_1) { Requirement.new('>', version_1) }
+      let(:requirement_lte_2) { Requirement.new('<=', version_2) }
+
+      it 'works correctly with greater than operator' do
+        dependency = Dependency.new('gem_a', requirement_gt_1)
+        expect(dependency.satisfied_by?(specification_gem_a_v1)).to be false  # 1 > 1 is false
+        expect(dependency.satisfied_by?(specification_gem_a_v2)).to be true   # 2 > 1 is true
+        expect(dependency.satisfied_by?(specification_gem_a_v3)).to be true   # 3 > 1 is true
+      end
+
+      it 'works correctly with less than or equal operator' do
+        dependency = Dependency.new('gem_a', requirement_lte_2)
+        expect(dependency.satisfied_by?(specification_gem_a_v1)).to be true   # 1 <= 2 is true
+        expect(dependency.satisfied_by?(specification_gem_a_v2)).to be true   # 2 <= 2 is true
+        expect(dependency.satisfied_by?(specification_gem_a_v3)).to be false  # 3 <= 2 is false
+      end
+    end
+
+    context 'edge cases' do
+      it 'handles specifications with dependencies' do
+        dep_a = Dependency.new('gem_c', requirement_gte_1)
+        dep_b = Dependency.new('gem_d', requirement_eq_2)
+        spec_with_deps = Specification.new('gem_a', version_2, [dep_a, dep_b])
+        dependency = Dependency.new('gem_a', requirement_eq_2)
+        expect(dependency.satisfied_by?(spec_with_deps)).to be true
+      end
+
+      it 'is case sensitive for gem names' do
+        spec_uppercase = Specification.new('GEM_A', version_2, [])
+        dependency_lowercase = Dependency.new('gem_a', requirement_eq_2)
+        expect(dependency_lowercase.satisfied_by?(spec_uppercase)).to be false
+      end
+
+      it 'handles empty gem names' do
+        spec_empty_name = Specification.new('', version_1, [])
+        dependency_empty_name = Dependency.new('', requirement_gte_1)
+        dependency_normal_name = Dependency.new('gem_a', requirement_gte_1)
+        
+        expect(dependency_empty_name.satisfied_by?(spec_empty_name)).to be true
+        expect(dependency_normal_name.satisfied_by?(spec_empty_name)).to be false
+      end
     end
   end
 end

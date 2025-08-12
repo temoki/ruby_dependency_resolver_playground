@@ -61,9 +61,7 @@ class SpecificationProvider
   # @param spec [Specification] 仕様
   # @return [Boolean] 要件が満たされるか
   def requirement_satisfied_by?(requirement, activated, spec)
-    return false unless requirement.name == spec.name
-    
-    requirement.requirement.satisfied_by?(spec.version)
+    requirement.satisfied_by?(spec)
   end
 
   # 2つの依存関係が等しいかチェックする
