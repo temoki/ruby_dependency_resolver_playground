@@ -8,15 +8,24 @@ require_relative 'version'
 
 # サンプルの仕様を作成（正常に解決できるケース）
 specifications = [
-  Specification.new('gem_a', Version.new(1), []),
-  Specification.new('gem_a', Version.new(2), []),
-  Specification.new('gem_b', Version.new(1), [
-    Dependency.new('gem_a', Requirement.new('>=', Version.new(1)))  # gem_a 1以上を要求
+  Specification.new('logger', Version.new(1), []),
+  Specification.new('logger', Version.new(2), []),
+  Specification.new('logger', Version.new(3), []),
+  Specification.new('http', Version.new(1), [
+    Dependency.new('logger', Requirement.new('>=', Version.new(1)))
   ]),
-  Specification.new('gem_c', Version.new(1), [
-    Dependency.new('gem_a', Requirement.new('>=', Version.new(1))),  # gem_a 1以上を要求
-    Dependency.new('gem_b', Requirement.new('>=', Version.new(1)))   # gem_b 1以上を要求
-  ])
+  Specification.new('http', Version.new(2), [
+    Dependency.new('logger', Requirement.new('>=', Version.new(2)))
+  ]),
+  Specification.new('http', Version.new(3), [
+    Dependency.new('logger', Requirement.new('>=', Version.new(3)))
+  ]),
+  Specification.new('json', Version.new(1), [
+    Dependency.new('logger', Requirement.new('>=', Version.new(2)))
+  ]),
+  Specification.new('json', Version.new(2), [
+    Dependency.new('logger', Requirement.new('>=', Version.new(2)))
+  ]),
 ]
 
 # SpecificationProviderとUIを初期化
@@ -25,7 +34,8 @@ ui = ResolverUI.new(true)
 
 # 解決したい依存関係を定義
 requested_dependencies = [
-  Dependency.new('gem_c', Requirement.new('>=', Version.new(1)))
+  Dependency.new('http', Requirement.new('>=', Version.new(3))),
+  Dependency.new('json', Requirement.new('>=', Version.new(2))),
 ]
 
 # Resolverを作成して実行
