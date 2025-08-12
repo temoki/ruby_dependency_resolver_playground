@@ -58,7 +58,7 @@ class SpecificationProvider
   # 要件が指定された仕様によって満たされるかチェックする
   # @param requirement [Dependency] 要件
   # @param activated [DependencyGraph] 依存関係グラフ
-  # @param spec [Specification] 仕様（Molinillo 0.8.0では3番目の引数が実際の仕様、必須）
+  # @param spec [Specification] 仕様
   # @return [Boolean] 要件が満たされるか
   def requirement_satisfied_by?(requirement, activated, spec)
     return false unless requirement.name == spec.name

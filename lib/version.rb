@@ -1,6 +1,8 @@
 class Version
   attr_reader :major
 
+  # 初期化
+  # @param major [Integer] メジャーバージョン
   def initialize(major)
     @major = major
   end

@@ -1,6 +1,10 @@
+# パッケージの必要条件を表すクラス
 class Requirement
   attr_reader :operator, :version
 
+  # 初期化
+  # @param operator [String] 演算子（'=', '>', '<', '>=', '<='）
+  # @param version [Version] バージョン
   def initialize(operator, version)
     @operator = operator
     @version = version
