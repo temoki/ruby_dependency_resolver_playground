@@ -1,4 +1,4 @@
-# 依存関係を表すクラス
+# 依存パッケージを表すクラス
 class Dependency
   attr_reader :name, :requirement
 

@@ -1,3 +1,4 @@
+# パッケージのバージョンを表すクラス
 class Version
   attr_reader :major
 
