@@ -77,8 +77,8 @@ class SpecificationProvider
     sorted_deps = dependencies.sort_by { |dep|
       [dep.name, dep.requirement.operator, dep.requirement.version.major]
     }
-    sorted_other_deps = other_dependencies.sort_by {
-      |dep| [dep.name, dep.requirement.operator, dep.requirement.version.major]
+    sorted_other_deps = other_dependencies.sort_by { |dep|
+      [dep.name, dep.requirement.operator, dep.requirement.version.major]
     }
     
     sorted_deps == sorted_other_deps
