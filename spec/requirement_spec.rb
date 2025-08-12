@@ -15,7 +15,7 @@ RSpec.describe Requirement do
     end
 
     it 'accepts different operators' do
-      operators = ['=', '>', '<', '>=', '<=']
+      operators = ['=', '!=', '>', '<', '>=', '<=']
       operators.each do |op|
         requirement = Requirement.new(op, version_1)
         expect(requirement.operator).to eq(op)
@@ -38,6 +38,7 @@ RSpec.describe Requirement do
     it 'handles all supported operators' do
       expectations = {
         '=' => '= 1',
+        '!=' => '!= 1',
         '>' => '> 1',
         '<' => '< 1',
         '>=' => '>= 1',
@@ -134,6 +135,19 @@ RSpec.describe Requirement do
       it 'returns false when version is different' do
         expect(requirement.satisfied_by?(version_1)).to be false
         expect(requirement.satisfied_by?(version_3)).to be false
+      end
+    end
+
+    describe 'with != operator' do
+      let(:requirement) { Requirement.new('!=', version_2) }
+
+      it 'returns true when version is different' do
+        expect(requirement.satisfied_by?(version_1)).to be true
+        expect(requirement.satisfied_by?(version_3)).to be true
+      end
+
+      it 'returns false when version matches exactly' do
+        expect(requirement.satisfied_by?(version_2)).to be false
       end
     end
 
@@ -252,7 +266,7 @@ RSpec.describe Requirement do
 
   describe 'comprehensive satisfaction matrix' do
     let(:versions) { [Version.new(1), Version.new(2), Version.new(3)] }
-    let(:operators) { ['=', '>', '<', '>=', '<='] }
+    let(:operators) { ['=', '!=', '>', '<', '>=', '<='] }
 
     it 'satisfies expected combinations' do
       # Test version 2 with various operators against different target versions
@@ -261,6 +275,10 @@ RSpec.describe Requirement do
         ['=', 2, 1, false],
         ['=', 2, 2, true],
         ['=', 2, 3, false],
+        
+        ['!=', 2, 1, true],
+        ['!=', 2, 2, false],
+        ['!=', 2, 3, true],
         
         ['>', 2, 1, false],
         ['>', 2, 2, false],

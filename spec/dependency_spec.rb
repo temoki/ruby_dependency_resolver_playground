@@ -50,6 +50,7 @@ RSpec.describe Dependency do
     it 'formats correctly with all operator types' do
       operators_and_expectations = {
         Requirement.new('=', version_1) => 'test_gem (= 1)',
+        Requirement.new('!=', version_1) => 'test_gem (!= 1)',
         Requirement.new('>', version_1) => 'test_gem (> 1)',
         Requirement.new('<', version_1) => 'test_gem (< 1)',
         Requirement.new('>=', version_1) => 'test_gem (>= 1)',
@@ -332,6 +333,7 @@ RSpec.describe Dependency do
     context 'with various operators' do
       let(:requirement_gt_1) { Requirement.new('>', version_1) }
       let(:requirement_lte_2) { Requirement.new('<=', version_2) }
+      let(:requirement_ne_2) { Requirement.new('!=', version_2) }
 
       it 'works correctly with greater than operator' do
         dependency = Dependency.new('gem_a', requirement_gt_1)
@@ -345,6 +347,13 @@ RSpec.describe Dependency do
         expect(dependency.satisfied_by?(specification_gem_a_v1)).to be true   # 1 <= 2 is true
         expect(dependency.satisfied_by?(specification_gem_a_v2)).to be true   # 2 <= 2 is true
         expect(dependency.satisfied_by?(specification_gem_a_v3)).to be false  # 3 <= 2 is false
+      end
+
+      it 'works correctly with not equal operator' do
+        dependency = Dependency.new('gem_a', requirement_ne_2)
+        expect(dependency.satisfied_by?(specification_gem_a_v1)).to be true   # 1 != 2 is true
+        expect(dependency.satisfied_by?(specification_gem_a_v2)).to be false  # 2 != 2 is false
+        expect(dependency.satisfied_by?(specification_gem_a_v3)).to be true   # 3 != 2 is true
       end
     end
 

@@ -154,6 +154,8 @@ class SpecificationProvider
       2
     when '<='
       2
+    when '!='
+      2  # 特定のバージョンを除外するが、多くのバージョンが該当
     else
       3  # 最も制限が少ない
     end

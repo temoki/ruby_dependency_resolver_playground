@@ -3,7 +3,7 @@ class Requirement
   attr_reader :operator, :version
 
   # 初期化
-  # @param operator [String] 演算子（'=', '>', '<', '>=', '<='）
+  # @param operator [String] 演算子（'=', '!=', '>', '<', '>=', '<='）
   # @param version [Version] バージョン
   def initialize(operator, version)
     @operator = operator
@@ -30,6 +30,8 @@ class Requirement
     case operator
     when '='
       version == self.version
+    when '!='
+      version != self.version
     when '>'
       version > self.version
     when '<'
