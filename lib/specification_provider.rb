@@ -4,6 +4,10 @@ require_relative 'requirement'
 require_relative 'dependency'
 require_relative 'specification'
 
+# 参考
+# https://github.com/CocoaPods/CocoaPods/blob/648ccdcaea2063fe63977a0146e1717aec3efa54/lib/cocoapods/resolver.rb#L148
+# https://github.com/rubygems/rubygems/blob/e38c8fbae31603204966e295209e1f0a6778e3f6/lib/rubygems/resolver.rb#L180
+
 class SpecificationProvider
   include Molinillo::SpecificationProvider
 
