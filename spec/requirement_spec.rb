@@ -42,7 +42,8 @@ RSpec.describe Requirement do
         '>' => '> 1.0.0',
         '<' => '< 1.0.0',
         '>=' => '>= 1.0.0',
-        '<=' => '<= 1.0.0'
+        '<=' => '<= 1.0.0',
+        '~>' => '~> 1.0.0'
       }
 
       expectations.each do |operator, expected_string|
@@ -215,8 +216,64 @@ RSpec.describe Requirement do
       end
     end
 
+    describe 'with ~> operator' do
+      describe 'with patch version specified' do
+        let(:requirement) { Requirement.new('~>', Version.new(2, 3, 1)) }
+
+        it 'returns true for same version' do
+          expect(requirement.satisfied_by?(Version.new(2, 3, 1))).to be true
+        end
+
+        it 'returns true for higher patch version' do
+          expect(requirement.satisfied_by?(Version.new(2, 3, 2))).to be true
+          expect(requirement.satisfied_by?(Version.new(2, 3, 5))).to be true
+        end
+
+        it 'returns false for different minor version' do
+          expect(requirement.satisfied_by?(Version.new(2, 4, 0))).to be false
+          expect(requirement.satisfied_by?(Version.new(2, 2, 9))).to be false
+        end
+
+        it 'returns false for different major version' do
+          expect(requirement.satisfied_by?(Version.new(3, 3, 1))).to be false
+          expect(requirement.satisfied_by?(Version.new(1, 3, 1))).to be false
+        end
+
+        it 'returns false for lower version' do
+          expect(requirement.satisfied_by?(Version.new(2, 3, 0))).to be false
+        end
+      end
+
+      describe 'with minor version specified (patch = 0)' do
+        let(:requirement) { Requirement.new('~>', Version.new(1, 4, 0)) }
+
+        it 'returns true for same version' do
+          expect(requirement.satisfied_by?(Version.new(1, 4, 0))).to be true
+        end
+
+        it 'returns true for higher minor version' do
+          expect(requirement.satisfied_by?(Version.new(1, 5, 0))).to be true
+          expect(requirement.satisfied_by?(Version.new(1, 9, 5))).to be true
+        end
+
+        it 'returns true for higher patch in same minor' do
+          expect(requirement.satisfied_by?(Version.new(1, 4, 1))).to be true
+          expect(requirement.satisfied_by?(Version.new(1, 4, 10))).to be true
+        end
+
+        it 'returns false for different major version' do
+          expect(requirement.satisfied_by?(Version.new(2, 4, 0))).to be false
+          expect(requirement.satisfied_by?(Version.new(0, 4, 0))).to be false
+        end
+
+        it 'returns false for lower version' do
+          expect(requirement.satisfied_by?(Version.new(1, 3, 9))).to be false
+        end
+      end
+    end
+
     describe 'with unsupported operator' do
-      let(:requirement) { Requirement.new('~>', version_2) }
+      let(:requirement) { Requirement.new('***', version_2) }
 
       it 'returns false for any version' do
         expect(requirement.satisfied_by?(version_1)).to be false
@@ -266,7 +323,7 @@ RSpec.describe Requirement do
 
   describe 'comprehensive satisfaction matrix' do
     let(:versions) { [Version.new(1), Version.new(2), Version.new(3)] }
-    let(:operators) { ['=', '!=', '>', '<', '>=', '<='] }
+    let(:operators) { ['=', '!=', '>', '<', '>=', '<=', '~>'] }
 
     it 'satisfies expected combinations' do
       # Test version 2 with various operators against different target versions
@@ -294,16 +351,40 @@ RSpec.describe Requirement do
         
         ['<=', 2, 1, true],
         ['<=', 2, 2, true],
-        ['<=', 2, 3, false]
+        ['<=', 2, 3, false],
+        
+        # ~> operator tests
+        ['~>', [2, 0, 0], [2, 0, 0], true],  # Same version
+        ['~>', [2, 0, 0], [2, 1, 0], true],  # Higher minor
+        ['~>', [2, 0, 0], [2, 5, 9], true],  # Much higher minor
+        ['~>', [2, 0, 0], [3, 0, 0], false], # Different major
+        ['~>', [2, 0, 0], [1, 9, 9], false], # Lower version
+        
+        ['~>', [2, 3, 1], [2, 3, 1], true],  # Same version with patch
+        ['~>', [2, 3, 1], [2, 3, 5], true],  # Higher patch
+        ['~>', [2, 3, 1], [2, 4, 0], false], # Different minor
+        ['~>', [2, 3, 1], [2, 2, 9], false], # Lower minor
+        ['~>', [2, 3, 1], [3, 3, 1], false], # Different major
+        ['~>', [2, 3, 1], [2, 3, 0], false]  # Lower patch
       ]
 
       test_cases.each do |operator, req_version, test_version, expected|
-        requirement = Requirement.new(operator, Version.new(req_version))
-        version_to_test = Version.new(test_version)
+        if req_version.is_a?(Array)
+          requirement = Requirement.new(operator, Version.new(*req_version))
+          version_to_test = Version.new(*test_version)
+          req_version_str = req_version.join('.')
+          test_version_str = test_version.join('.')
+        else
+          requirement = Requirement.new(operator, Version.new(req_version))
+          version_to_test = Version.new(test_version)
+          req_version_str = req_version.to_s
+          test_version_str = test_version.to_s
+        end
+        
         result = requirement.satisfied_by?(version_to_test)
         
         expect(result).to eq(expected), 
-          "Expected #{operator} #{req_version} satisfied by #{test_version} to be #{expected}, got #{result}"
+          "Expected #{operator} #{req_version_str} satisfied by #{test_version_str} to be #{expected}, got #{result}"
       end
     end
   end

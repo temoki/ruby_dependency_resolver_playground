@@ -54,7 +54,8 @@ RSpec.describe Dependency do
         Requirement.new('>', version_1) => 'test_gem (> 1.0.0)',
         Requirement.new('<', version_1) => 'test_gem (< 1.0.0)',
         Requirement.new('>=', version_1) => 'test_gem (>= 1.0.0)',
-        Requirement.new('<=', version_1) => 'test_gem (<= 1.0.0)'
+        Requirement.new('<=', version_1) => 'test_gem (<= 1.0.0)',
+        Requirement.new('~>', version_1) => 'test_gem (~> 1.0.0)'
       }
 
       operators_and_expectations.each do |requirement, expected_string|
@@ -334,6 +335,7 @@ RSpec.describe Dependency do
       let(:requirement_gt_1) { Requirement.new('>', version_1) }
       let(:requirement_lte_2) { Requirement.new('<=', version_2) }
       let(:requirement_ne_2) { Requirement.new('!=', version_2) }
+      let(:requirement_pessimistic_1_4) { Requirement.new('~>', Version.new(1, 4, 0)) }
 
       it 'works correctly with greater than operator' do
         dependency = Dependency.new('gem_a', requirement_gt_1)
@@ -354,6 +356,19 @@ RSpec.describe Dependency do
         expect(dependency.satisfied_by?(specification_gem_a_v1)).to be true   # 1 != 2 is true
         expect(dependency.satisfied_by?(specification_gem_a_v2)).to be false  # 2 != 2 is false
         expect(dependency.satisfied_by?(specification_gem_a_v3)).to be true   # 3 != 2 is true
+      end
+
+      it 'works correctly with pessimistic operator' do
+        dependency = Dependency.new('gem_a', requirement_pessimistic_1_4)
+        spec_1_4_0 = Specification.new('gem_a', Version.new(1, 4, 0), [])
+        spec_1_5_2 = Specification.new('gem_a', Version.new(1, 5, 2), [])
+        spec_2_0_0 = Specification.new('gem_a', Version.new(2, 0, 0), [])
+        spec_1_3_9 = Specification.new('gem_a', Version.new(1, 3, 9), [])
+        
+        expect(dependency.satisfied_by?(spec_1_4_0)).to be true   # ~> 1.4.0 satisfied by 1.4.0
+        expect(dependency.satisfied_by?(spec_1_5_2)).to be true   # ~> 1.4.0 satisfied by 1.5.2
+        expect(dependency.satisfied_by?(spec_2_0_0)).to be false  # ~> 1.4.0 not satisfied by 2.0.0
+        expect(dependency.satisfied_by?(spec_1_3_9)).to be false  # ~> 1.4.0 not satisfied by 1.3.9
       end
     end
 
