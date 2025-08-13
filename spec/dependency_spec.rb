@@ -39,22 +39,22 @@ RSpec.describe Dependency do
   describe '#to_s' do
     it 'returns name and requirement in parentheses' do
       dependency = Dependency.new('gem_a', requirement_gte_1)
-      expect(dependency.to_s).to eq('gem_a (>= 1)')
+      expect(dependency.to_s).to eq('gem_a (>= 1.0.0)')
     end
 
     it 'works with different names and requirements' do
       dependency = Dependency.new('my_gem', requirement_eq_2)
-      expect(dependency.to_s).to eq('my_gem (= 2)')
+      expect(dependency.to_s).to eq('my_gem (= 2.0.0)')
     end
 
     it 'formats correctly with all operator types' do
       operators_and_expectations = {
-        Requirement.new('=', version_1) => 'test_gem (= 1)',
-        Requirement.new('!=', version_1) => 'test_gem (!= 1)',
-        Requirement.new('>', version_1) => 'test_gem (> 1)',
-        Requirement.new('<', version_1) => 'test_gem (< 1)',
-        Requirement.new('>=', version_1) => 'test_gem (>= 1)',
-        Requirement.new('<=', version_1) => 'test_gem (<= 1)'
+        Requirement.new('=', version_1) => 'test_gem (= 1.0.0)',
+        Requirement.new('!=', version_1) => 'test_gem (!= 1.0.0)',
+        Requirement.new('>', version_1) => 'test_gem (> 1.0.0)',
+        Requirement.new('<', version_1) => 'test_gem (< 1.0.0)',
+        Requirement.new('>=', version_1) => 'test_gem (>= 1.0.0)',
+        Requirement.new('<=', version_1) => 'test_gem (<= 1.0.0)'
       }
 
       operators_and_expectations.each do |requirement, expected_string|
@@ -161,7 +161,7 @@ RSpec.describe Dependency do
       dependency = Dependency.new('', requirement_gte_1)
       expect(dependency.name).to eq('')
       expect(dependency.requirement).to eq(requirement_gte_1)
-      expect(dependency.to_s).to eq(' (>= 1)')
+      expect(dependency.to_s).to eq(' (>= 1.0.0)')
     end
 
     it 'works with names containing special characters' do
@@ -169,7 +169,7 @@ RSpec.describe Dependency do
       special_names.each do |name|
         dependency = Dependency.new(name, requirement_gte_1)
         expect(dependency.name).to eq(name)
-        expect(dependency.to_s).to eq("#{name} (>= 1)")
+        expect(dependency.to_s).to eq("#{name} (>= 1.0.0)")
       end
     end
 
@@ -177,7 +177,7 @@ RSpec.describe Dependency do
       long_name = 'a' * 1000
       dependency = Dependency.new(long_name, requirement_gte_1)
       expect(dependency.name).to eq(long_name)
-      expect(dependency.to_s).to eq("#{long_name} (>= 1)")
+      expect(dependency.to_s).to eq("#{long_name} (>= 1.0.0)")
     end
 
     it 'can be used as hash keys' do
@@ -215,7 +215,7 @@ RSpec.describe Dependency do
       expect(dependency.requirement).to be_a(Requirement)
       expect(dependency.requirement.operator).to eq('>=')
       expect(dependency.requirement.version.major).to eq(5)
-      expect(dependency.to_s).to eq('integration_gem (>= 5)')
+      expect(dependency.to_s).to eq('integration_gem (>= 5.0.0)')
     end
 
     it 'works with various requirement configurations' do

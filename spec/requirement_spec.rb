@@ -27,22 +27,22 @@ RSpec.describe Requirement do
   describe '#to_s' do
     it 'returns operator and version as a string' do
       requirement = Requirement.new('>=', version_1)
-      expect(requirement.to_s).to eq('>= 1')
+      expect(requirement.to_s).to eq('>= 1.0.0')
     end
 
     it 'works with different operators and versions' do
       requirement = Requirement.new('<', version_2)
-      expect(requirement.to_s).to eq('< 2')
+      expect(requirement.to_s).to eq('< 2.0.0')
     end
 
     it 'handles all supported operators' do
       expectations = {
-        '=' => '= 1',
-        '!=' => '!= 1',
-        '>' => '> 1',
-        '<' => '< 1',
-        '>=' => '>= 1',
-        '<=' => '<= 1'
+        '=' => '= 1.0.0',
+        '!=' => '!= 1.0.0',
+        '>' => '> 1.0.0',
+        '<' => '< 1.0.0',
+        '>=' => '>= 1.0.0',
+        '<=' => '<= 1.0.0'
       }
 
       expectations.each do |operator, expected_string|

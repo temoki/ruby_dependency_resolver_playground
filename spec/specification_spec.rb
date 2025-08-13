@@ -55,12 +55,12 @@ RSpec.describe Specification do
   describe '#to_s' do
     it 'returns name and version separated by space' do
       spec = Specification.new('my_gem', version_1, empty_dependencies)
-      expect(spec.to_s).to eq('my_gem 1')
+      expect(spec.to_s).to eq('my_gem 1.0.0')
     end
 
     it 'works with different names and versions' do
       spec = Specification.new('another_gem', version_2, single_dependency)
-      expect(spec.to_s).to eq('another_gem 2')
+      expect(spec.to_s).to eq('another_gem 2.0.0')
     end
 
     it 'ignores dependencies in string representation' do
@@ -68,14 +68,14 @@ RSpec.describe Specification do
       spec_with_deps = Specification.new('test_gem', version_1, multiple_dependencies)
       
       expect(spec_empty.to_s).to eq(spec_with_deps.to_s)
-      expect(spec_with_deps.to_s).to eq('test_gem 1')
+      expect(spec_with_deps.to_s).to eq('test_gem 1.0.0')
     end
 
     it 'handles complex gem names' do
       complex_names = ['gem-with-dashes', 'gem_with_underscores', 'GemWithCamelCase', 'gem123']
       complex_names.each do |name|
         spec = Specification.new(name, version_1, empty_dependencies)
-        expect(spec.to_s).to eq("#{name} 1")
+        expect(spec.to_s).to eq("#{name} 1.0.0")
       end
     end
   end
@@ -226,7 +226,7 @@ RSpec.describe Specification do
       spec = Specification.new('', version_1, empty_dependencies)
       expect(spec.name).to eq('')
       expect(spec.version).to eq(version_1)
-      expect(spec.to_s).to eq(' 1')
+      expect(spec.to_s).to eq(' 1.0.0')
     end
 
     it 'works with names containing special characters' do
@@ -234,7 +234,7 @@ RSpec.describe Specification do
       special_names.each do |name|
         spec = Specification.new(name, version_1, empty_dependencies)
         expect(spec.name).to eq(name)
-        expect(spec.to_s).to eq("#{name} 1")
+        expect(spec.to_s).to eq("#{name} 1.0.0")
       end
     end
 
@@ -242,21 +242,21 @@ RSpec.describe Specification do
       long_name = 'a' * 1000
       spec = Specification.new(long_name, version_1, empty_dependencies)
       expect(spec.name).to eq(long_name)
-      expect(spec.to_s).to eq("#{long_name} 1")
+      expect(spec.to_s).to eq("#{long_name} 1.0.0")
     end
 
     it 'works with zero version' do
       zero_version = Version.new(0)
       spec = Specification.new('my_gem', zero_version, empty_dependencies)
       expect(spec.version).to eq(zero_version)
-      expect(spec.to_s).to eq('my_gem 0')
+      expect(spec.to_s).to eq('my_gem 0.0.0')
     end
 
     it 'works with negative versions' do
       negative_version = Version.new(-1)
       spec = Specification.new('my_gem', negative_version, empty_dependencies)
       expect(spec.version).to eq(negative_version)
-      expect(spec.to_s).to eq('my_gem -1')
+      expect(spec.to_s).to eq('my_gem -1.0.0')
     end
 
     it 'can be used as hash keys' do
@@ -293,7 +293,7 @@ RSpec.describe Specification do
       
       expect(spec.version).to be_a(Version)
       expect(spec.version.major).to eq(5)
-      expect(spec.to_s).to eq('integration_gem 5')
+      expect(spec.to_s).to eq('integration_gem 5.0.0')
     end
 
     it 'correctly stores and retrieves dependency objects' do
@@ -330,7 +330,7 @@ RSpec.describe Specification do
       expect(rails_spec.name).to eq('rails')
       expect(rails_spec.version.major).to eq(7)
       expect(rails_spec.dependencies.size).to eq(3)
-      expect(rails_spec.to_s).to eq('rails 7')
+      expect(rails_spec.to_s).to eq('rails 7.0.0')
       
       # Check individual dependencies
       activerecord_dep = rails_spec.dependencies.find { |dep| dep.name == 'activerecord' }
